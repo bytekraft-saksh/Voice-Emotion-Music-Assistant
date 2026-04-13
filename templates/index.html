@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Emotion Music Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Animated Background Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- Main Card -->
+    <div class="card">
+        <div class="header">
+            <span class="icon">🎤</span>
+            <h1>Voice Emotion Music Assistant</h1>
+            <p class="subtitle">Speak your feelings. Discover your soundtrack.</p>
+        </div>
+
+        <!-- Voice Button (Circular Orb) -->
+        <div class="mic-container">
+            <button id="speakBtn" class="mic-orb">
+                <span class="mic-icon">🎙️</span>
+            </button>
+            <span class="mic-label">Tap to speak</span>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="resetBtn" class="btn-secondary hidden">New Mood?</button>
+
+        <!-- Status Message -->
+        <div id="status" class="status hidden"></div>
+
+        <!-- Results Section -->
+        <div id="results" class="results hidden">
+            <div class="glass-container">
+                <div class="section">
+                    <span class="section-label">You said</span>
+                    <p id="userText" class="text-content"></p>
+                </div>
+
+                <div class="emotion-grid">
+                    <div class="emotion-card">
+                        <span class="label">Emotion</span>
+                        <span id="rawEmotion" class="value">-</span>
+                    </div>
+                    <div class="emotion-card">
+                        <span class="label">Mood</span>
+                        <span id="finalEmotion" class="value">-</span>
+                    </div>
+                    <div class="emotion-card">
+                        <span class="label">Confidence</span>
+                        <span id="confidence" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Songs Section -->
+        <div id="songsSection" class="songs-section hidden">
+            <div class="glass-container songs-glass">
+                <span class="section-label">Recommended Songs</span>
+                <div id="songList" class="song-list"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="error hidden"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

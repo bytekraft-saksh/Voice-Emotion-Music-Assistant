@@ -1,0 +1,56 @@
+# =====================
+# Environment variables
+# =====================
+.env
+*.env
+
+# =====================
+# Python cache
+# =====================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =====================
+# Model files (VERY IMPORTANT for your project)
+# =====================
+model/*.safetensors
+model/*.bin
+model/*.pt
+model/*.pth
+
+# If tokenizer/model config is large or generated, ignore if needed:
+# model/tokenizer_*.json
+# model/config.json
+
+# =====================
+# Flask / cache folders
+# =====================
+cache/
+*.cache
+
+# =====================
+# Virtual environment
+# =====================
+venv/
+env/
+.venv/
+
+# =====================
+# OS / system files
+# =====================
+.DS_Store
+Thumbs.db
+
+# =====================
+# Logs
+# =====================
+*.log
+
+
+
+# =====================
+# Node (only if you add frontend tooling later)
+# =====================
+node_modules/
