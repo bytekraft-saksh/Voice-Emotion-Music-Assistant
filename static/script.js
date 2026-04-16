@@ -9,6 +9,7 @@ const spotifyPlayer = document.getElementById('spotifyPlayer');
 const leftSongs = document.getElementById('leftSongs');
 const rightSongs = document.getElementById('rightSongs');
 const openSpotifyBtn = document.getElementById('openSpotifyBtn');
+const directPlayBtn = document.getElementById('directPlayBtn');
 
 const userText = document.getElementById('userText');
 const rawEmotion = document.getElementById('rawEmotion');
@@ -20,6 +21,7 @@ let currentSongs = [];
 let currentStep = "idle";
 let isWakeWordMode = true;
 let wakeRecognition = null;
+let currentMode = "emotion"; // "emotion" or "play"
 
 // Web Speech API
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -57,6 +59,7 @@ function speak(text) {
 // Event Listeners
 speakBtn.addEventListener('click', startListening);
 resetBtn.addEventListener('click', handleReset);
+directPlayBtn.addEventListener('click', toggleMode);
 
 // Helper: extract number from voice (NEW)
 function extractNumber(text) {
@@ -163,11 +166,109 @@ function updateSpotifyButton(song) {
 }
 
 function handleReset() {
+    // Exit play mode and return to emotion mode
+    if (currentMode === "play") {
+        currentMode = "emotion";
+        document.body.classList.remove('play-mode');
+        directPlayBtn.classList.remove('active');
+        directPlayBtn.textContent = "Direct Play Mode";
+    }
     resetUI();
     currentStep = "emotion";
     setTimeout(() => {
-        speak("Tell me how you feel");
+        speak("Back to mood detection. Tell me how you feel.");
     }, 300);
+}
+
+// Toggle between Emotion Mode and Direct Play Mode
+function toggleMode() {
+    if (currentMode === "emotion") {
+        // Switch to Play Mode
+        currentMode = "play";
+        document.body.classList.add('play-mode');
+        directPlayBtn.classList.add('active');
+        directPlayBtn.textContent = "Emotion Mode";
+
+        // Reset UI
+        resultsDiv.classList.add('hidden');
+        leftSongs.innerHTML = '';
+        rightSongs.innerHTML = '';
+        currentSongs = [];
+        hideError();
+
+        speak("Direct play mode activated. Which song do you want me to play?");
+    } else {
+        // Switch back to Emotion Mode
+        currentMode = "emotion";
+        currentStep = "emotion";
+        currentSongs = [];
+
+        document.body.classList.remove('play-mode');
+        directPlayBtn.classList.remove('active');
+        directPlayBtn.textContent = "Direct Play Mode";
+
+        // Reset UI completely
+        resetUI();
+        updateMicLabel("Tap to speak");
+
+        speak("Back to mood detection. Tell me how you feel.");
+    }
+}
+
+// Extract song name from "play <song>" command
+function extractSongQuery(text) {
+    text = text.toLowerCase().trim();
+
+    // Remove "play" prefix
+    if (text.startsWith('play ')) {
+        return text.substring(5).trim();
+    }
+
+    // Also handle variations
+    const prefixes = ['play the song ', 'play song ', 'play track ', 'play '];
+    for (const prefix of prefixes) {
+        if (text.startsWith(prefix)) {
+            return text.substring(prefix.length).trim();
+        }
+    }
+
+    // If no prefix found, return the whole text
+    return text;
+}
+
+// Play song by query (Direct Play Mode)
+async function playSongByQuery(query) {
+    showStatus('🔍 Searching for song...');
+
+    try {
+        const response = await fetch(`/play-song?query=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.error) {
+            hideStatus();
+            showError('Song not found. Please try another.');
+            speak("I couldn't find that song. Please try another.");
+            return;
+        }
+
+        // Display the song in player
+        spotifyPlayer.src = data.embed_url || getEmbedUrl(data.url);
+        playerSection.classList.remove('hidden');
+        updateSpotifyButton(data);
+
+        hideStatus();
+        speak(`Playing ${data.song}`);
+
+        // Scroll to player
+        setTimeout(() => {
+            playerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+
+    } catch (error) {
+        hideStatus();
+        showError('Error searching for song');
+        speak("Sorry, I had trouble finding that song.");
+    }
 }
 
 function startListening() {
@@ -188,7 +289,16 @@ function startListening() {
         speakBtn.classList.remove('listening');
         updateMicLabel('Tap to speak');
 
-        if (currentStep === "song_selection") {
+        if (currentMode === "play") {
+            // Direct Play Mode: extract song query and play
+            const query = extractSongQuery(transcript);
+            if (query) {
+                playSongByQuery(query);
+            } else {
+                showError("Please say 'play' followed by the song name");
+                speak("Please say play followed by the song name.");
+            }
+        } else if (currentStep === "song_selection") {
             handleSongSelection(transcript);
         } else {
             processText(transcript);
@@ -363,12 +473,16 @@ function startWakeWordListening() {
     
     wakeRecognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript.toLowerCase();
-        
+
         if (transcript.includes('hey assistant')) {
             wakeRecognition.stop();
             isWakeWordMode = false;
 
-            speak("Yes, I'm listening");
+            if (currentMode === "play") {
+                speak("Which song do you want me to play?");
+            } else {
+                speak("Yes, I'm listening");
+            }
 
             setTimeout(() => {
                 startListening();

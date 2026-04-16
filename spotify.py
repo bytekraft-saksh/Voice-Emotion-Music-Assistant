@@ -94,3 +94,44 @@ def get_songs(emotion):
         songs.append(song_info)
 
     return songs
+
+
+def search_song_by_query(query):
+    """
+    Search for a single song by query string.
+    Returns the first matching track.
+    """
+    if not query:
+        return None
+
+    try:
+        spotify_client = get_spotify_client()
+    except (ValueError, Exception) as e:
+        print(f"Error connecting to Spotify: {e}")
+        return None
+
+    try:
+        results = spotify_client.search(q=query, type="track", limit=1)
+    except Exception as e:
+        print(f"Error searching Spotify: {e}")
+        return None
+
+    tracks = results.get("tracks", {}).get("items", [])
+
+    if not tracks:
+        print(f"No songs found for query: {query}")
+        return None
+
+    track = tracks[0]
+    track_id = track.get("id", "")
+
+    song_info = {
+        "song": track.get("name", "Unknown"),
+        "artist": ", ".join(
+            artist.get("name", "Unknown") for artist in track.get("artists", [])
+        ),
+        "url": track.get("external_urls", {}).get("spotify", ""),
+        "embed_url": f"https://open.spotify.com/embed/track/{track_id}" if track_id else ""
+    }
+
+    return song_info

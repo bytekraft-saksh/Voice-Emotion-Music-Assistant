@@ -73,6 +73,40 @@ body {
     justify-self: start;
 }
 
+/* Direct Play Mode Button */
+.direct-play-btn {
+    align-self: flex-end;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    margin-bottom: 10px;
+}
+
+.direct-play-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+.direct-play-btn.active {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    border-color: transparent;
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+}
+
+/* Play Mode State - Hide New Mood Button */
+body.play-mode #resetBtn {
+    display: none !important;
+}
+
 /* Spotify Button */
 .spotify-btn {
     margin-top: 12px;

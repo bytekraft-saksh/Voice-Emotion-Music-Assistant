@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from emotion import detect_emotion
-from spotify import get_songs
+from spotify import get_songs, search_song_by_query
 
 app = Flask(__name__)
 
@@ -45,6 +45,23 @@ def songs():
         return jsonify({"songs": []})
 
     return jsonify({"songs": songs_list})
+
+
+@app.route("/play-song", methods=["GET"])
+def play_song():
+    query = request.args.get("query", "").strip()
+
+    print(f"🎵 Direct play query: {query}")
+
+    if not query:
+        return jsonify({"error": "Missing query parameter"}), 400
+
+    song = search_song_by_query(query)
+
+    if not song:
+        return jsonify({"error": "No song found for the given query"}), 404
+
+    return jsonify(song)
 
 
 if __name__ == "__main__":
