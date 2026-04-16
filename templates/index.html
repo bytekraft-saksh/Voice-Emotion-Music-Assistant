@@ -12,63 +12,85 @@
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
 
-    <!-- Main Card -->
-    <div class="card">
-        <div class="header">
-            <span class="icon">🎤</span>
-            <h1>Voice Emotion Music Assistant</h1>
-            <p class="subtitle">Speak your feelings. Discover your soundtrack.</p>
-        </div>
+    <!-- Main 3-Column Layout -->
+    <div class="main-layout">
 
-        <!-- Voice Button (Circular Orb) -->
-        <div class="mic-container">
-            <button id="speakBtn" class="mic-orb">
-                <span class="mic-icon">🎙️</span>
-            </button>
-            <span class="mic-label">Tap to speak</span>
-        </div>
+        <!-- LEFT SONG COLUMN -->
+        <div id="leftSongs" class="songs-column"></div>
 
-        <!-- Reset Button -->
-        <button id="resetBtn" class="btn-secondary hidden">New Mood?</button>
-
-        <!-- Status Message -->
-        <div id="status" class="status hidden"></div>
-
-        <!-- Results Section -->
-        <div id="results" class="results hidden">
-            <div class="glass-container">
-                <div class="section">
-                    <span class="section-label">You said</span>
-                    <p id="userText" class="text-content"></p>
+        <!-- CENTER CONTENT -->
+        <div class="center-content">
+            <!-- Main Card -->
+            <div class="card">
+                <div class="header">
+                    <span class="icon">🎤</span>
+                    <h1>Voice Emotion Music Assistant</h1>
+                    <p class="subtitle">Speak your feelings. Discover your soundtrack.</p>
                 </div>
 
-                <div class="emotion-grid">
-                    <div class="emotion-card">
-                        <span class="label">Emotion</span>
-                        <span id="rawEmotion" class="value">-</span>
+                <!-- Voice Button (Circular Orb) -->
+                <div class="mic-container">
+                    <button id="speakBtn" class="mic-orb">
+                        <span class="mic-icon">🎙️</span>
+                    </button>
+                    <span class="mic-label">Tap to speak</span>
+                </div>
+
+                <!-- Reset Button -->
+                <button id="resetBtn" class="btn-secondary hidden">New Mood?</button>
+
+                <!-- Status Message -->
+                <div id="status" class="status hidden"></div>
+
+                <!-- Results Section -->
+                <div id="results" class="results hidden">
+                    <div class="glass-container">
+                        <div class="section">
+                            <span class="section-label">You said</span>
+                            <p id="userText" class="text-content"></p>
+                        </div>
+
+                        <div class="emotion-grid">
+                            <div class="emotion-card">
+                                <span class="label">Emotion</span>
+                                <span id="rawEmotion" class="value">-</span>
+                            </div>
+                            <div class="emotion-card">
+                                <span class="label">Mood</span>
+                                <span id="finalEmotion" class="value">-</span>
+                            </div>
+                            <div class="emotion-card">
+                                <span class="label">Confidence</span>
+                                <span id="confidence" class="value">-</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="emotion-card">
-                        <span class="label">Mood</span>
-                        <span id="finalEmotion" class="value">-</span>
-                    </div>
-                    <div class="emotion-card">
-                        <span class="label">Confidence</span>
-                        <span id="confidence" class="value">-</span>
-                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error" class="error hidden"></div>
+            </div>
+
+            <!-- Spotify Embed Player Section -->
+            <div id="playerSection" class="player-section hidden">
+                <div class="glass-container player-glass">
+                    <span class="section-label">Now Playing</span>
+                    <iframe
+                        id="spotifyPlayer"
+                        src=""
+                        width="100%"
+                        height="80"
+                        frameborder="0"
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
+                    </iframe>
+                    <button id="openSpotifyBtn" class="spotify-btn">Open in Spotify</button>
                 </div>
             </div>
         </div>
 
-        <!-- Songs Section -->
-        <div id="songsSection" class="songs-section hidden">
-            <div class="glass-container songs-glass">
-                <span class="section-label">Recommended Songs</span>
-                <div id="songList" class="song-list"></div>
-            </div>
-        </div>
+        <!-- RIGHT SONG COLUMN -->
+        <div id="rightSongs" class="songs-column"></div>
 
-        <!-- Error Message -->
-        <div id="error" class="error hidden"></div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

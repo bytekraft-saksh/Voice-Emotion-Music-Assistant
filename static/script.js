@@ -3,9 +3,12 @@ const speakBtn = document.getElementById('speakBtn');
 const resetBtn = document.getElementById('resetBtn');
 const statusDiv = document.getElementById('status');
 const resultsDiv = document.getElementById('results');
-const songsSection = document.getElementById('songsSection');
-const songList = document.getElementById('songList');
 const errorDiv = document.getElementById('error');
+const playerSection = document.getElementById('playerSection');
+const spotifyPlayer = document.getElementById('spotifyPlayer');
+const leftSongs = document.getElementById('leftSongs');
+const rightSongs = document.getElementById('rightSongs');
+const openSpotifyBtn = document.getElementById('openSpotifyBtn');
 
 const userText = document.getElementById('userText');
 const rawEmotion = document.getElementById('rawEmotion');
@@ -106,12 +109,57 @@ function hideError() {
 
 function resetUI() {
     resultsDiv.classList.add('hidden');
-    songsSection.classList.add('hidden');
+    playerSection.classList.add('hidden');
+    spotifyPlayer.src = '';
     hideError();
-    songList.innerHTML = '';
+    leftSongs.innerHTML = '';
+    rightSongs.innerHTML = '';
     currentSongs = [];
     resetBtn.classList.add('hidden');
     speakBtn.classList.remove('hidden');
+}
+
+// Helper: Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Spotify Embed Player Helpers
+function getEmbedUrl(spotifyUrl) {
+    if (!spotifyUrl) return null;
+
+    // Convert:
+    // https://open.spotify.com/track/ID
+    // → https://open.spotify.com/embed/track/ID
+    return spotifyUrl.replace('/track/', '/embed/track/');
+}
+
+function playEmbeddedSong(song) {
+    const embedUrl = getEmbedUrl(song.url);
+
+    if (!embedUrl) {
+        showError('No playable Spotify link.');
+        return;
+    }
+
+    spotifyPlayer.src = embedUrl;
+    playerSection.classList.remove('hidden');
+    updateSpotifyButton(song);
+
+    // Scroll to player
+    setTimeout(() => {
+        playerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+}
+
+function updateSpotifyButton(song) {
+    openSpotifyBtn.onclick = () => {
+        if (song.url) {
+            window.open(song.url, '_blank');
+        }
+    };
 }
 
 function handleReset() {
@@ -240,19 +288,40 @@ async function fetchSongs(emotion) {
 }
 
 function displaySongs(songs) {
-    songList.innerHTML = '';
+    const left = document.getElementById('leftSongs');
+    const right = document.getElementById('rightSongs');
+
+    left.innerHTML = '';
+    right.innerHTML = '';
     currentSongs = songs;
 
     songs.forEach((song, index) => {
-        const div = document.createElement('div');
-        div.className = 'song-item';
-        div.innerHTML = `${index + 1}. ${song.song} - ${song.artist}`;
+        const item = document.createElement('div');
+        item.className = 'song-item';
 
-        div.onclick = () => window.open(song.url, '_blank');
-        songList.appendChild(div);
+        item.innerHTML = `
+            <div class="song-number">${index + 1}</div>
+            <div class="song-info">
+                <div class="song-name">${escapeHtml(song.song)}</div>
+                <div class="song-artist">${escapeHtml(song.artist)}</div>
+            </div>
+        `;
+
+        item.addEventListener('click', () => {
+            playEmbeddedSong(song);
+            speak('Now playing ' + song.song);
+            setTimeout(() => {
+                speak('You can say play another song or tell me your mood again');
+            }, 2000);
+        });
+
+        if (index < 5) {
+            left.appendChild(item);
+        } else {
+            right.appendChild(item);
+        }
     });
 
-    songsSection.classList.remove('hidden');
     resetBtn.classList.remove('hidden');
     hideStatus();
 }
@@ -271,9 +340,10 @@ function handleSongSelection(text) {
     if (index >= 0 && index < currentSongs.length) {
         const song = currentSongs[index];
         speak(`Playing ${song.song}`);
-        if (song.url) {
-            window.open(song.url, '_blank');
-        }
+        playEmbeddedSong(song);
+        setTimeout(() => {
+            speak('You can say play another song or tell me your mood again');
+        }, 2000);
     } else {
         speak("Invalid selection, please try again");
     }
