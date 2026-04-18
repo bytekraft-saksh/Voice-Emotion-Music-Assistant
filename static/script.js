@@ -26,12 +26,16 @@ let currentMode = "emotion"; // "emotion" or "play"
 // Web Speech API
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
+let recognitionTimeout = null;
 
-if (SpeechRecognition) {
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+function createRecognition() {
+    if (!SpeechRecognition) return null;
+    const rec = new SpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.maxAlternatives = 1;
+    return rec;
 }
 
 // Text-to-Speech function
@@ -272,8 +276,26 @@ async function playSongByQuery(query) {
 }
 
 function startListening() {
-    if (!recognition) {
+    if (!SpeechRecognition) {
         showError('Speech recognition is not supported in your browser.');
+        return;
+    }
+
+    // Stop wake word listener to prevent conflict
+    if (wakeRecognition) {
+        try {
+            wakeRecognition.stop();
+            wakeRecognition = null;
+        } catch (e) {
+            // Ignore errors if already stopped
+        }
+    }
+    isWakeWordMode = false;
+
+    // Create fresh recognition instance (fixes reliability issues)
+    recognition = createRecognition();
+    if (!recognition) {
+        showError('Failed to create speech recognition.');
         return;
     }
 
@@ -282,15 +304,28 @@ function startListening() {
     speakBtn.classList.add('listening');
     updateMicLabel('Listening...');
 
+    // Safety timeout - auto-stop after 10 seconds
+    recognitionTimeout = setTimeout(() => {
+        if (recognition) {
+            recognition.stop();
+        }
+    }, 10000);
+
+    let shouldRestartWakeWord = true;
+
     recognition.onresult = (event) => {
+        clearTimeout(recognitionTimeout);
+        shouldRestartWakeWord = false; // Don't restart - we got a result
         const transcript = event.results[0][0].transcript;
+        console.log('🎤 Voice captured:', transcript);
+        console.log('📊 Current mode:', currentMode, '| Current step:', currentStep);
+
         hideStatus();
         speakBtn.disabled = false;
         speakBtn.classList.remove('listening');
         updateMicLabel('Tap to speak');
 
         if (currentMode === "play") {
-            // Direct Play Mode: extract song query and play
             const query = extractSongQuery(transcript);
             if (query) {
                 playSongByQuery(query);
@@ -306,18 +341,34 @@ function startListening() {
     };
 
     recognition.onerror = (event) => {
-        speakBtn.classList.remove('listening');
-        updateMicLabel('Tap to speak');
+        clearTimeout(recognitionTimeout);
+        console.error('🎤 Speech recognition error:', event.error);
         handleSpeechError(event);
     };
-    
+
     recognition.onend = () => {
+        clearTimeout(recognitionTimeout);
         speakBtn.disabled = false;
         speakBtn.classList.remove('listening');
         updateMicLabel('Tap to speak');
+        recognition = null;
+
+        // Restart wake word listening after manual session ends (unless we got a result)
+        if (shouldRestartWakeWord && !isWakeWordMode) {
+            isWakeWordMode = true;
+            setTimeout(startWakeWordListening, 500);
+        }
     };
 
-    recognition.start();
+    try {
+        recognition.start();
+    } catch (e) {
+        console.error('Failed to start recognition:', e);
+        clearTimeout(recognitionTimeout);
+        showError('Microphone error. Please try again.');
+        speakBtn.disabled = false;
+        speakBtn.classList.remove('listening');
+    }
 }
 
 function updateMicLabel(text) {
@@ -328,13 +379,29 @@ function updateMicLabel(text) {
 function handleSpeechError(event) {
     hideStatus();
     speakBtn.disabled = false;
+    speakBtn.classList.remove('listening');
     updateMicLabel('Tap to speak');
 
-    showError('Speech error');
+    const errorMessages = {
+        'no-speech': 'No speech detected. Please try speaking louder.',
+        'audio-capture': 'Microphone not found. Check your mic settings.',
+        'not-allowed': 'Microphone permission denied. Allow mic access.',
+        'network': 'Network error. Check your internet connection.',
+        'aborted': 'Listening cancelled.',
+        'service-not-allowed': 'Speech service unavailable.',
+        'bad-grammar': 'Recognition error. Please try again.',
+        'language-not-supported': 'Language not supported.',
+        'permission-denied': 'Permission denied. Check browser settings.'
+    };
+
+    const message = errorMessages[event.error] || `Speech error: ${event.error}`;
+    console.error('Speech error details:', event.error);
+    showError(message);
 }
 
 async function processText(text) {
     showStatus('🧠 Analyzing emotion...');
+    console.log('📤 Sending to /analyze:', text);
 
     try {
         const analyzeResponse = await fetch('/analyze', {
@@ -344,6 +411,7 @@ async function processText(text) {
         });
 
         const analyzeData = await analyzeResponse.json();
+        console.log('📥 Response from /analyze:', analyzeData);
 
         displayEmotion(analyzeData, text);
 
@@ -358,6 +426,7 @@ async function processText(text) {
         }, 1500);
 
     } catch (error) {
+        console.error('❌ Error in processText:', error);
         hideStatus();
         showError('Error: ' + error.message);
     }
@@ -490,9 +559,10 @@ function startWakeWordListening() {
         }
     };
     
-    wakeRecognition.onerror = () => {
-        if (isWakeWordMode) {
-            setTimeout(startWakeWordListening, 1000);
+    wakeRecognition.onerror = (event) => {
+        console.log('Wake word error:', event.error);
+        if (isWakeWordMode && event.error !== 'not-allowed') {
+            setTimeout(startWakeWordListening, 2000);
         }
     };
     
